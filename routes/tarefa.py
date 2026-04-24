@@ -14,7 +14,7 @@ async def inicio():
 # Lista todas as tarefas do banco
 @tarefa_router.get('/tarefa')
 async def listar_todas_tarefas():
-    return [lista_tarefas_serializadas(conexao.todo.tarefa.find()), lista_tarefas_serializadas(conexao.todo.tarefa_concluida.find())]
+    return lista_tarefas_serializadas(conexao.todo.tarefa.find())
 
 # lista tarefas nao concluidas
 @tarefa_router.get('/tarefa-naoconcluida')
@@ -57,5 +57,14 @@ async def atualizar_prioridade(tarefa_id, campo_prioridade: AtualizarPrioridade)
     conexao.todo.tarefa.find_one_and_update(
         {'_id': ObjectId(tarefa_id)},
         {'$set': dict(campo_prioridade)}
+    )
+    return tarefaSerializada(conexao.todo.tarefa.find_one({'_id': ObjectId(tarefa_id)}))
+
+# atualizar tarefa
+@tarefa_router.put('/tarefa-atualizar/{tarefa_id}')
+async def atualizar_tarefa(tarefa_id, tarefa: AtualizarTarefa):
+    conexao.todo.tarefa.find_one_and_update(
+        {'_id': ObjectId(tarefa_id)},
+        {'$set': (tarefa.dict(exclude_unset=True))} # o exclude é uma funcao do pydantic q remove os campos nulos.
     )
     return tarefaSerializada(conexao.todo.tarefa.find_one({'_id': ObjectId(tarefa_id)}))

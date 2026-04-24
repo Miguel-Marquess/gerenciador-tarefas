@@ -1,6 +1,7 @@
 def tarefaSerializada(tarefa):
     return {
         "id": str(tarefa['_id']),
+        'titulo': tarefa['titulo'],
         "descricao": tarefa['descricao'],
         "prioridade": tarefa['prioridade'],
         "concluida": tarefa['concluida'],
