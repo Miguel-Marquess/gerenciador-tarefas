@@ -4,7 +4,7 @@ def tarefaSerializada(tarefa):
         "descricao": tarefa['descricao'],
         "prioridade": tarefa['prioridade'],
         "concluida": tarefa['concluida'],
-        "data_cricao": tarefa['data_criacao'],
+        "data_criacao": tarefa['data_criacao'],
         "prazo": tarefa['prazo']
     }
 
