@@ -4,6 +4,7 @@ from models.tarefa import Tarefa, AtualizarTarefa, AtualizarPrioridade
 from database.database import conexao
 from schema.tarefa import tarefaSerializada, lista_tarefas_serializadas
 from pymongo import ASCENDING
+from datetime import datetime
 # instancia o app das rotas
 tarefa_router = APIRouter()
 
@@ -34,6 +35,11 @@ async def filtrar_por_prioridade(prioridade: str):
 @tarefa_router.get('/tarefa-prazos')
 async def filtrar_por_prazos():
     return lista_tarefas_serializadas(conexao.todo.tarefa.find().sort('prazo', ASCENDING)) # desending é a mesma coisa q -1, ascending seria 1
+
+# filtrar pos tarefas atrasadas
+@tarefa_router.get('/tarefa-atrasadas')
+async def tarefas_atrasadas():
+    return lista_tarefas_serializadas(conexao.todo.tarefa.find({'prazo': {'$lt': datetime.now()}, 'concluida': False}).sort('prazo', ASCENDING)) # $lt = 'less then'(menor que)
 
 # adiciona novas tarefas
 @tarefa_router.post('/tarefa')
