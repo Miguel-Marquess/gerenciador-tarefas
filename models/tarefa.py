@@ -1,21 +1,20 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime # para salvar no mongo como ISODate formato(XXXX-XX-XXT00:00:00). Dessa forma permite filtrar as datas de forma correta
 
 class Tarefa(BaseModel):
     titulo: str
     descricao: str
     prioridade: str
     concluida: bool = False
-    data_criacao: str
-    prazo: str
+    data_criacao: datetime
+    prazo: datetime
 
 class AtualizarTarefa(BaseModel):
     titulo: Optional[str] = None # Campo Opcional, Padrão None
-    descricao: Optional[str] = None 
-    prioridade: Optional[str] = None
-    concluida: Optional[bool] = None
-    data_criacao: Optional[str] = None
-    prazo: Optional[str] = None
+    descricao: Optional[str] = None
+    data_criacao: Optional[datetime] = None
+    prazo: Optional[datetime] = None
 
 class AtualizarPrioridade(BaseModel):
     prioridade: str

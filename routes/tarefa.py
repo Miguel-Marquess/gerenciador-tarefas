@@ -3,7 +3,7 @@ from bson import ObjectId
 from models.tarefa import Tarefa, AtualizarTarefa, AtualizarPrioridade
 from database.database import conexao
 from schema.tarefa import tarefaSerializada, lista_tarefas_serializadas
-
+from pymongo import ASCENDING
 # instancia o app das rotas
 tarefa_router = APIRouter()
 
@@ -25,6 +25,15 @@ async def lista_tarefas_nao_concluidas():
 @tarefa_router.get('/tarefa-concluida')
 async def lista_tarefas_concluidas():
     return lista_tarefas_serializadas(conexao.todo.tarefa.find({'concluida': True}))
+
+# filtrar por prioridade
+@tarefa_router.get('/tarefa-filtro_prioridade/{prioridade}')
+async def filtrar_por_prioridade(prioridade: str):
+    return lista_tarefas_serializadas(conexao.todo.tarefa.find({'prioridade': prioridade}))
+
+@tarefa_router.get('/tarefa-prazos')
+async def filtrar_por_prazos():
+    return lista_tarefas_serializadas(conexao.todo.tarefa.find().sort('prazo', ASCENDING)) # desending é a mesma coisa q -1, ascending seria 1
 
 # adiciona novas tarefas
 @tarefa_router.post('/tarefa')
@@ -49,7 +58,7 @@ async def marcar_concluida(tarefa_id):
         '$set': {'concluida': True}
     }
     )
-    return lista_tarefas_serializadas(conexao.todo.tarefa_concluida.find())
+    return lista_tarefas_serializadas(conexao.todo.tarefa.find({'concluida': True}))
 
 # atualiza a prioridade
 @tarefa_router.put('/tarefa-atualizar_prioridade/{tarefa_id}')
