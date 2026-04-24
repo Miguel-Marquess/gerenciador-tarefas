@@ -41,6 +41,12 @@ async def filtrar_por_prazos():
 async def tarefas_atrasadas():
     return lista_tarefas_serializadas(conexao.todo.tarefa.find({'prazo': {'$lt': datetime.now()}, 'concluida': False}).sort('prazo', ASCENDING)) # $lt = 'less then'(menor que)
 
+# contar tarefas concluidas
+@tarefa_router.get('/tarefa-numero_concluidas')
+async def numero_concluidas():
+    return conexao.todo.tarefa.count_documents({'concluida': True})
+
+
 # adiciona novas tarefas
 @tarefa_router.post('/tarefa')
 async def adicionar_tarefa(tarefa: Tarefa):
