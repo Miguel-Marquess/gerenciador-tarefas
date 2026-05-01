@@ -1,10 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from bson import ObjectId
-from models.tarefa import Tarefa, AtualizarTarefa, AtualizarPrioridade
+from models.tarefa import Tarefa, AtualizarTarefa, TipoPrioridade, Message
 from database.database import conexao
-from schema.tarefa import tarefaSerializada, lista_tarefas_serializadas
+from schema.tarefa import tarefaSerializada, lista_tarefas_serializadas, validar_id, retorna_se_existir
 from pymongo import ASCENDING
 from datetime import datetime
+
 # instancia o app das rotas
 tarefa_router = APIRouter()
 
@@ -14,78 +15,64 @@ async def inicio():
 
 # Lista todas as tarefas do banco
 @tarefa_router.get('/tarefa')
-async def listar_todas_tarefas():
-    return lista_tarefas_serializadas(conexao.todo.tarefa.find())
+async def listar_tarefas(concluida: bool = None, prioridade: TipoPrioridade = None, ordenar_prazo: bool = None, tarefas_atrasadas: bool = None): # TipoPrioridade usa Enum para colocar caixa de selecao de prioridades.
+    query={} # {"concluida": False, "prazo"}
+    if concluida is not None:
+        query["concluida"] =  concluida
+    if prioridade is not None:
+        query["prioridade"] = prioridade # find({concluisda: False}) 
+    if tarefas_atrasadas is not None:
+        query["prazo"] = {"$lt": datetime.now()} # 
+        query["concluida"] = False
 
-# lista tarefas nao concluidas
-@tarefa_router.get('/tarefa-naoconcluida')
-async def lista_tarefas_nao_concluidas():
-    return lista_tarefas_serializadas(conexao.todo.tarefa.find({'concluida': False}))
-
-# lista tarefas concluidas
-@tarefa_router.get('/tarefa-concluida')
-async def lista_tarefas_concluidas():
-    return lista_tarefas_serializadas(conexao.todo.tarefa.find({'concluida': True}))
-
-# filtrar por prioridade
-@tarefa_router.get('/tarefa-filtro_prioridade/{prioridade}')
-async def filtrar_por_prioridade(prioridade: str):
-    return lista_tarefas_serializadas(conexao.todo.tarefa.find({'prioridade': prioridade}))
-
-@tarefa_router.get('/tarefa-prazos')
-async def filtrar_por_prazos():
-    return lista_tarefas_serializadas(conexao.todo.tarefa.find().sort('prazo', ASCENDING)) # desending é a mesma coisa q -1, ascending seria 1
-
-# filtrar pos tarefas atrasadas
-@tarefa_router.get('/tarefa-atrasadas')
-async def tarefas_atrasadas():
-    return lista_tarefas_serializadas(conexao.todo.tarefa.find({'prazo': {'$lt': datetime.now()}, 'concluida': False}).sort('prazo', ASCENDING)) # $lt = 'less then'(menor que)
-
-# contar tarefas concluidas
-@tarefa_router.get('/tarefa-numero_concluidas')
-async def numero_concluidas():
-    return conexao.todo.tarefa.count_documents({'concluida': True})
-
+    tarefa_mongo = conexao.tarefa.find(query)
+    if ordenar_prazo is not None:
+        tarefa_mongo = tarefa_mongo.sort("prazo", ASCENDING)
+    return lista_tarefas_serializadas(tarefa_mongo)
 
 # adiciona novas tarefas
-@tarefa_router.post('/tarefa')
+@tarefa_router.post('/tarefa', response_model=Tarefa, status_code=201)
 async def adicionar_tarefa(tarefa: Tarefa):
-    conexao.todo.tarefa.insert_one(dict(tarefa))
-    return lista_tarefas_serializadas(conexao.todo.tarefa.find())
+    tarefa_mongo = conexao.tarefa.insert_one(tarefa.dict())
+    return tarefaSerializada(tarefa_mongo)
 
 # deleta tarefas
-@tarefa_router.delete('/tarefa/{tarefa_id}')
+@tarefa_router.delete('/tarefa/{tarefa_id}', response_model=Tarefa, responses= {404: {"model": Message}, 400: {"model": Message}})
 async def deletar_tarefa(tarefa_id):
-    return tarefaSerializada(conexao.todo.tarefa.find_one_and_delete(
-        {'_id': ObjectId(tarefa_id)}
-    ))
+    id_validado = validar_id(tarefa_id)
+    tarefa_mongo = conexao.tarefa.find_one_and_delete(
+        {'_id': id_validado}
+    )
+    if retorna_se_existir(tarefa_mongo):
+        return {"Mensagem" : "Tarefa deletada com sucesso."}
 
 # atualiza o campo 'concluido'
-@tarefa_router.put('/tarefa/{tarefa_id}')
+@tarefa_router.put('/tarefa/{tarefa_id}', response_model=Tarefa, responses={404: {"model": Message}, 400: {"model": Message}})
 async def marcar_concluida(tarefa_id):
-    conexao.todo.tarefa.find_one_and_update({
-        '_id': ObjectId(tarefa_id)
-    },
-    {
-        '$set': {'concluida': True}
-    }
+    id_validado = validar_id(tarefa_id)
+    tarefa_mongo = conexao.tarefa.find_one_and_update(
+        {'_id': id_validado},
+        {'$set': {'concluida': True}}
     )
-    return lista_tarefas_serializadas(conexao.todo.tarefa.find({'concluida': True}))
+    return tarefaSerializada(retorna_se_existir(tarefa_mongo))
 
 # atualiza a prioridade
-@tarefa_router.put('/tarefa-atualizar_prioridade/{tarefa_id}')
-async def atualizar_prioridade(tarefa_id, campo_prioridade: AtualizarPrioridade):
-    conexao.todo.tarefa.find_one_and_update(
-        {'_id': ObjectId(tarefa_id)},
-        {'$set': dict(campo_prioridade)}
+@tarefa_router.put('/tarefa/atualizar_prioridade/{tarefa_id}', response_model=Tarefa, responses={404: {"model": Message}, 400: {"model": Message}})
+async def atualizar_prioridade(tarefa_id, campo_prioridade: TipoPrioridade):
+    id_validado = validar_id(tarefa_id)
+    tarefa_mongo = conexao.tarefa.find_one_and_update(
+        {'_id': id_validado},
+        {'$set': {"prioridade": campo_prioridade}}
     )
-    return tarefaSerializada(conexao.todo.tarefa.find_one({'_id': ObjectId(tarefa_id)}))
+    if retorna_se_existir(tarefa_mongo):
+        return tarefaSerializada(conexao.tarefa.find_one({'_id': id_validado})) # retorna_se_existir: se a tarefa for Nula, levanta erro 404.
 
 # atualizar tarefa
-@tarefa_router.put('/tarefa-atualizar/{tarefa_id}')
+@tarefa_router.put('/tarefa/atualizar/{tarefa_id}', response_model=Tarefa, responses={404: {"model": Message}, 400: {"model": Message}}) # response_model: define o formato da resposta da API. responses: 
 async def atualizar_tarefa(tarefa_id, tarefa: AtualizarTarefa):
-    conexao.todo.tarefa.find_one_and_update(
-        {'_id': ObjectId(tarefa_id)},
-        {'$set': (tarefa.dict(exclude_unset=True))} # o exclude é uma funcao do pydantic q remove os campos nulos.
+    id_validado = validar_id(tarefa_id)
+    tarefa_mongo = conexao.tarefa.find_one_and_update(
+        {'_id': id_validado},
+        {'$set': tarefa.dict(exclude_unset=True)} # o exclude é uma funcao do pydantic q remove os campos nulos. model_dump e a mesma coisa de .dict() so que nao e obsoleto
     )
-    return tarefaSerializada(conexao.todo.tarefa.find_one({'_id': ObjectId(tarefa_id)}))
+    return tarefaSerializada(retorna_se_existir(tarefa_mongo))
