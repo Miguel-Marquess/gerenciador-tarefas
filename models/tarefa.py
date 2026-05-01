@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime # para salvar no mongo como ISODate formato(XXXX-XX-XXT00:00:00). Dessa forma permite filtrar as datas de forma correta
+from enum import Enum
 
 class Tarefa(BaseModel):
     titulo: str
@@ -16,5 +17,10 @@ class AtualizarTarefa(BaseModel):
     data_criacao: Optional[datetime] = None
     prazo: Optional[datetime] = None
 
-class AtualizarPrioridade(BaseModel):
-    prioridade: str
+class TipoPrioridade(str, Enum):
+    alta = "alta"
+    media = "media"
+    baixa = "baixa"
+
+class Message(BaseModel):
+    message: str

@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 
-conexao = MongoClient(
+client = MongoClient(
     "mongodb://localhost:27017/todo"
 )
+conexao = client["todo"]
