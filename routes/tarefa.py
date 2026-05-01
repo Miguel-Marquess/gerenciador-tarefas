@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from bson import ObjectId
 from models.tarefa import Tarefa, AtualizarTarefa, TipoPrioridade, Message
 from database.database import conexao
