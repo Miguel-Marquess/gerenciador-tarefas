@@ -37,7 +37,7 @@ async def adicionar_tarefa(tarefa: Tarefa):
     return tarefaSerializada(tarefa_mongo)
 
 # deleta tarefas
-@tarefa_router.delete('/tarefa/{tarefa_id}', response_model=Tarefa, responses= {404: {"model": Message}, 400: {"model": Message}})
+@tarefa_router.delete('/tarefa/{tarefa_id}', response_model=Message, responses= {404: {"model": Message}, 400: {"model": Message}})
 async def deletar_tarefa(tarefa_id):
     id_validado = validar_id(tarefa_id)
     tarefa_mongo = conexao.tarefa.find_one_and_delete(
@@ -54,7 +54,7 @@ async def marcar_concluida(tarefa_id):
         {'_id': id_validado},
         {'$set': {'concluida': True}}
     )
-    return tarefaSerializada(retorna_se_existir(tarefa_mongo))
+    return tarefaSerializada(conexao.tarefa.find((retorna_se_existir(tarefa_mongo)).insertd_id))
 
 # atualiza a prioridade
 @tarefa_router.put('/tarefa/atualizar_prioridade/{tarefa_id}', response_model=Tarefa, responses={404: {"model": Message}, 400: {"model": Message}})
