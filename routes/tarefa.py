@@ -34,7 +34,7 @@ async def listar_tarefas(concluida: bool = None, prioridade: TipoPrioridade = No
 @tarefa_router.post('/tarefa', response_model=Tarefa, status_code=201)
 async def adicionar_tarefa(tarefa: Tarefa):
     tarefa_mongo = conexao.tarefa.insert_one(tarefa.dict())
-    return tarefaSerializada(tarefa_mongo)
+    return tarefaSerializada(conexao.tarefa.find_one({'_id': tarefa_mongo.inserted_id}))
 
 # deleta tarefas
 @tarefa_router.delete('/tarefa/{tarefa_id}', response_model=Message, responses= {404: {"model": Message}, 400: {"model": Message}})
@@ -44,7 +44,7 @@ async def deletar_tarefa(tarefa_id):
         {'_id': id_validado}
     )
     if retorna_se_existir(tarefa_mongo):
-        return {"Mensagem" : "Tarefa deletada com sucesso."}
+        return {"message" : "Tarefa deletada com sucesso."}
 
 # atualiza o campo 'concluido'
 @tarefa_router.put('/tarefa/{tarefa_id}', response_model=Tarefa, responses={404: {"model": Message}, 400: {"model": Message}})
@@ -54,7 +54,8 @@ async def marcar_concluida(tarefa_id):
         {'_id': id_validado},
         {'$set': {'concluida': True}}
     )
-    return tarefaSerializada(conexao.tarefa.find((retorna_se_existir(tarefa_mongo)).insertd_id))
+    if retorna_se_existir(tarefa_mongo):
+        return tarefaSerializada(conexao.tarefa.find_one({'_id': id_validado}))
 
 # atualiza a prioridade
 @tarefa_router.put('/tarefa/atualizar_prioridade/{tarefa_id}', response_model=Tarefa, responses={404: {"model": Message}, 400: {"model": Message}})
