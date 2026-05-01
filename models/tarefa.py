@@ -17,7 +17,7 @@ class TipoPrioridade(str, Enum):
 class Tarefa(BaseModel):
     titulo: str = Field(..., example="Estudar para prova de Matematica") # ... significa que tem q ter um valor obrigatorio, nao tem um valor padrao
     descricao: str = Field("") # "" significa que se nao colocar nada, o valor padrao e uma string vazia
-    prioridade: TipoPrioridade = Field(..., exemple="media") # aqui se o usuario nao colocar valores que estao dentro do TipoPrioridade, a API levanta erro 422
+    prioridade: TipoPrioridade = Field(..., example="media") # aqui se o usuario nao colocar valores que estao dentro do TipoPrioridade, a API levanta erro 422
     concluida: bool = False
     data_criacao: datetime
     prazo: datetime
